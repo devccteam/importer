@@ -1,0 +1,112 @@
+[project]
+name = "converter"
+version = "0.0.1"
+description = "API para conversão e extração de lançamentos"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi[standard] (>=0.116.1,<0.117.0)",
+    "python-multipart (>=0.0.20,<0.0.21)",
+    "celery (>=5.5.3,<6.0.0)",
+    "pydantic-settings (>=2.10.1,<3.0.0)",
+    "python-dotenv (>=1.1.1,<2.0.0)",
+    "gevent (>=25.5.1,<26.0.0)",
+    "pypdf (>=5.8.0,<6.0.0)",
+    "attrs (>=25.3.0,<26.0.0)",
+    "requests (>=2.32.4,<3.0.0)",
+    "redis (>=6.2.0,<7.0.0)",
+    "flower (>=2.0.1,<3.0.0)",
+    "pymupdf (>=1.26.3,<2.0.0)",
+    "rich (>=14.1.0,<15.0.0)",
+    "python-json-logger (>=3.3.0,<4.0.0)",
+    "pandas (>=2.3.1,<3.0.0)",
+]
+
+[tool.ruff]
+line-length = 88
+target-version = "py313"
+fix = true
+show-fixes = true
+indent-width = 4
+exclude = ["venv", ".venv", "env", ".env", "__pycache__"]
+
+[tool.ruff.lint]
+select = [
+    "ASYNC",
+    "A",
+    "ANN",
+    "B",
+    "BLE",
+    "C4",
+    "C90",
+    "COM",
+    "E",
+    "EM",
+    "ERA",
+    "EXE",
+    "F",
+    "FBT",
+    "FIX",
+    "I",
+    "ICN",
+    "ISC",
+    "Q",
+    "RET",
+    "RSE",
+    "S",
+    "SIM",
+    "SLF",
+    "T10",
+    "T20",
+    "TC",
+    "TD",
+    "TRY",
+    "UP",
+    "W",
+    "YTT",
+    "RUF",
+    "N",
+]
+ignore = ["T201", "COM812"]
+
+[tool.ruff.lint.flake8-quotes]
+inline-quotes = 'single'
+multiline-quotes = "single"
+docstring-quotes = "double"
+
+[tool.ruff.format]
+quote-style = "single"
+indent-style = "space"
+line-ending = "lf"
+
+[tool.ruff.lint.isort]
+known-first-party = ["converter"]
+
+[tool.pyright]
+typeCheckingMode = "strict"
+pythonVersion = "3.13"
+include = ["src"]
+exclude = [
+    "**/venv",
+    "**/.venv",
+    "**/env",
+    "**/.env",
+    "**/__pycache__",
+]
+venv = ".venv"
+venvPath = "."
+executionEnvironments = [{ root = "src" }]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "pyright>=1.1.407",
+    "ruff>=0.14.10",
+    "taskipy>=1.14.1",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/converter"]

@@ -1,0 +1,107 @@
+services:
+  app:
+    container_name: "app"
+    image: converter:latest
+    environment:
+      - REDIS_PORT
+      - REDIS_HOST
+      - URL_API_PGRST
+      - URL_API_DLL
+      - CHUNK_TO_POST
+    build:
+      context: ../
+      dockerfile: infra/Dockerfile
+      target: development
+    command: "uv run --no-dev uvicorn --host 0.0.0.0 --reload converter.server:app"
+    develop:
+      watch:
+        - action: sync
+          path: ../src
+          target: /app/src
+
+          ignore:
+            - .venv/
+            - __pycache__/
+
+        - action: sync
+          path: ../pyproject.toml
+          target: /app/pyproject.toml
+
+        - action: rebuild
+          path: ./uv.lock
+    depends_on:
+      - redis
+      - db
+
+  worker:
+    image: converter:latest
+    environment:
+      - REDIS_PORT
+      - REDIS_HOST
+      - URL_API_PGRST
+      - URL_API_DLL
+      - CHUNK_TO_POST
+    build:
+      context: ../
+      dockerfile: infra/Dockerfile
+      target: development
+    deploy:
+      replicas: 1
+    develop:
+      watch:
+        - action: sync+restart
+          path: ../src/converter/layouts
+          target: /app/src/converter/layouts/
+
+          ignore:
+            - .venv/
+            - __pycache__/
+
+        - action: sync
+          path: ../pyproject.toml
+          target: /app/pyproject.toml
+
+        - action: rebuild
+          path: ./uv.lock
+
+  flower:
+    container_name: "flower"
+    image: converter:latest
+    environment:
+      - REDIS_PORT
+      - REDIS_HOST
+      - URL_API_PGRST
+      - URL_API_DLL
+      - CHUNK_TO_POST
+    build:
+      context: ../
+      dockerfile: infra/Dockerfile
+      target: development
+
+  postgrest:
+    container_name: "rest-banco"
+    image: postgrest/postgrest
+    ports:
+      - "3000:3000"
+    environment:
+      PGRST_DB_URI: postgres://local_user:local_password@db:5432/local_db
+      PGRST_OPENAPI_SERVER_PROXY_URI: http://127.0.0.1:3000
+      PGRST_DB_ANON_ROLE: anon
+    depends_on:
+      - db
+
+  db:
+    container_name: "banco"
+    image: postgres:17-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: local_db
+      POSTGRES_USER: local_user
+      POSTGRES_PASSWORD: local_password
+    volumes:
+      - ./db.sql:/docker-entrypoint-initdb.d/db.sql
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:

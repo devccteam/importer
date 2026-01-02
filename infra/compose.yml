@@ -1,0 +1,76 @@
+services:
+  redis:
+    container_name: "redis"
+    environment:
+      - REDIS_PORT=6379
+      - REDIS_HOST=redis
+    image: "redis:8.0.3-alpine"
+    ports:
+      - "6379:6379"
+
+  app:
+    container_name: "app"
+    environment:
+      - REDIS_PORT=6379
+      - REDIS_HOST=redis
+      - URL_API_PGRST=https://converted.conciliadorcontabil.com.br
+      - URL_API_DLL=http://converter.conciliadorcontabil.com.br:9999
+      - CHUNK_TO_POST=500
+    image: matheusbosi/devconverter:latest
+    user: "1000:1000"
+    command: "uv run --no-dev uvicorn --host 0.0.0.0 converter.server:app"
+    ports:
+      - "8000:8000"
+    volumes:
+      - app:/app
+    depends_on:
+      - redis
+
+  worker:
+    environment:
+      - REDIS_PORT=6379
+      - REDIS_HOST=redis
+      - URL_API_PGRST=https://converted.conciliadorcontabil.com.br
+      - URL_API_DLL=http://converter.conciliadorcontabil.com.br:9999
+      - CHUNK_TO_POST=500
+    image: matheusbosi/devconverter:latest 
+    user: "1000:1000"
+    command: "uv run --no-dev celery -A src.converter.tasks.processa worker -l INFO -P gevent -c 100"
+    volumes:
+      - app:/app
+    depends_on:
+      - app
+    deploy:
+      mode: replicated
+      replicas: 4
+      update_config:
+        parallelism: 1
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1024M
+
+  flower:
+    container_name: "flower"
+    environment:
+      - REDIS_PORT=6379
+      - REDIS_HOST=redis
+      - URL_API_PGRST=https://converted.conciliadorcontabil.com.br
+      - URL_API_DLL=http://converter.conciliadorcontabil.com.br:9999
+      - CHUNK_TO_POST=500
+    image: matheusbosi/devconverter:latest
+    user: "1000:1000"
+    command: "uv run --no-dev celery -A src.converter.tasks.processa flower --basic-auth=admin:converter_admin"
+    ports:
+      - "5555:5555"
+    volumes:
+      - app:/app
+    depends_on:
+      - worker
+
+volumes:
+  app:

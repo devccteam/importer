@@ -1,0 +1,171 @@
+{
+  "info": {
+    "name": "Converter",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "api",
+      "item": [
+        {
+          "name": "convert",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "",
+            "url": {
+              "raw": "{{url}}/convert/layout/",
+              "protocol": "",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "convert",
+                "layout",
+                ""
+              ],
+              "query": [],
+              "variable": []
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "value": [
+                    ""
+                  ],
+                  "disabled": false,
+                  "type": "default"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "layout",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "",
+            "url": {
+              "raw": "{{url}}/layout/",
+              "protocol": "",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "layout",
+                ""
+              ],
+              "query": [],
+              "variable": []
+            }
+          }
+        },
+        {
+          "name": "status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "",
+            "url": {
+              "raw": "{{url}}/convert/",
+              "protocol": "",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "convert",
+                ""
+              ],
+              "query": [],
+              "variable": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "banco",
+      "item": [
+        {
+          "name": "conversions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "",
+            "url": {
+              "raw": "{{url_banco}}/conversions",
+              "protocol": "",
+              "host": [
+                "{{url_banco}}"
+              ],
+              "path": [
+                "conversions"
+              ],
+              "query": [],
+              "variable": []
+            }
+          }
+        },
+        {
+          "name": "releases",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "",
+            "url": {
+              "raw": "{{url_banco}}/releases?limit=10",
+              "protocol": "",
+              "host": [
+                "{{url_banco}}"
+              ],
+              "path": [
+                "releases?limit=10"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "conversions_id",
+                  "value": "eq."
+                }
+              ],
+              "variable": []
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "url",
+      "value": "",
+      "type": "default"
+    },
+    {
+      "key": "url_banco",
+      "value": "",
+      "type": "default"
+    }
+  ]
+}
