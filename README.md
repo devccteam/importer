@@ -36,7 +36,7 @@ Configurar o .env, com base no src/converter/.env.exemple
 
 ### 3° Rodar o projeto
 ```
-docker compose -f /infra/compose.yaml -f /infra/compose.override.yaml watch
+uv run task docker-watch
 ```
 
 ## 📖  Documentação
