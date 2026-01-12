@@ -61,21 +61,25 @@ def call_layout(self: Task, layout_id: str, file_obj: Arquivo) -> None:
 
 
 def processa_arquivo(layout_id: str, file_obj: Arquivo) -> str:
-    if check_if_layout_file_exists(layout_id):
-        task = call_layout.delay(layout_id, file_obj.model_dump())
-        return task.id
-
-    data = process_dll(layout_id, str(file_obj.file_dir)).data
-
     try:
-        result = json.loads(data.decode('utf-8'))
-    except json.JSONDecodeError:
-        result = data.decode('utf-8')
-    except UnicodeDecodeError as e:
-        logger.exception(f'Erro ao converter a resposta da api para json: {e}')
-        raise e
+        if check_if_layout_file_exists(layout_id):
+            task = call_layout.delay(layout_id, file_obj.model_dump())
+            return task.id
 
-    return result['id']
+        data = process_dll(layout_id, str(file_obj.file_dir)).data
+
+        try:
+            result = json.loads(data.decode('utf-8'))
+        except json.JSONDecodeError:
+            result = data.decode('utf-8')
+        except UnicodeDecodeError as e:
+            logger.exception(f'Erro ao converter a resposta da api para json: {e}')
+            raise e
+
+        return result['id']
+    finally:
+        file_obj.file_dir.unlink()
+
 
 
 if __name__ == '__main__':
