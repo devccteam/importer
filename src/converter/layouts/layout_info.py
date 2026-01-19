@@ -9,7 +9,7 @@ class CampoLayout:
     inputtitle: str = field(default='')
     inputrot: str = field(default='')
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, str | bool]:
         return {
             'titulo': self.titulo,
             'campo': self.campo,
@@ -32,7 +32,7 @@ class LayoutInfo:
     solicitainput: bool = field(default=False)
     tituloinput: str = field(default='')
 
-    def AsJson(self) -> dict:
+    def AsJson(self) -> dict[str, str]:
         dados = {
             'tipo': self.tipo,
             'descricao': self.descricao,
@@ -52,9 +52,7 @@ class LayoutInfo:
             dados['valores'] = [valor.to_dict() for valor in self.valores]
 
         if self.historicos:
-            dados['historicos'] = [
-                historico.to_dict() for historico in self.historicos
-            ]
+            dados['historicos'] = [historico.to_dict() for historico in self.historicos]
 
         return dados
 
@@ -66,9 +64,7 @@ class LayoutInfo:
         ValTitle: str = '',
         ValRot: str = '',
     ) -> None:
-        self.datas.append(
-            CampoLayout(vTitulo, vCampo, SolValue, ValTitle, ValRot)
-        )
+        self.datas.append(CampoLayout(vTitulo, vCampo, SolValue, ValTitle, ValRot))
 
     def InsereCampoNumDoc(self, vTitulo: str, vCampo: str) -> None:
         self.numdocs.append(CampoLayout(vTitulo, vCampo))

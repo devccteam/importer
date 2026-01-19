@@ -45,7 +45,7 @@ def extract_text_from_pdf(file_path: Path, password: str = '') -> Path:
             extracted_text: bytes
 
             with open(file_out, 'wb') as out:
-                for index, page in enumerate(doc):
+                for _, page in enumerate(doc):
                     extracted_text = page.get_text(sort=True).encode('utf8')
                     if extracted_text:
                         out.write(extracted_text)

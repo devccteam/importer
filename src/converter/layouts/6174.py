@@ -1,83 +1,83 @@
 from pathlib import Path
+from typing import Iterator
 
 from converter.conversores.pymupdf import extract_text_from_pdf
 from converter.layouts.lancamento import Lancamento
+from converter.layouts.layout_base import LayoutBase
 from converter.layouts.layout_info import LayoutInfo
 from converter.uteis import config_logger
 from converter.uteis.arquivos import Arquivo, ler_txt
 from converter.uteis.datas import (
-    RetornaDataInicioLinha,
-    RetornaTotalDatasValidas,
+    retorna_data_inicio_linha,
+    retorna_total_datas,
 )
 from converter.uteis.texto import RetornaTextoFinalLinhaAteEspacoDuplo
 from converter.uteis.valores import (
-    RetornaTotalValoresValidos,
-    RetornaValorFinalLinha,
+    retorna_total_valores,
+    retorna_valor_final_linha,
 )
 
 logger = config_logger.setup('app.layouts')
 
+FILE = Path(__file__).stem
 
-def info_layout() -> dict:
+class Processador(LayoutBase):
     layout = LayoutInfo('SOFTWARE', 'GENESIS', 'RELATÓRIO DE MOVIMENTAÇÕES FINANCEIRAS')
 
-    return layout.AsJson()
+    def processar(self, id_task: str, file_obj: Arquivo) -> None:
+        path_dir: Path = Path('')
 
+        try:
+            lancamento = Lancamento(id_task=id_task)
 
-def processar(id_task: str, file_obj: Arquivo) -> None:
-    path_dir: Path = Path('')
+            path_dir = extract_text_from_pdf(file_obj.file_dir, file_obj.password)
 
-    try:
-        lancamento = Lancamento(id_task=id_task)
+            pos_credito = 0
 
-        path_dir = extract_text_from_pdf(file_obj.file_dir, file_obj.password)
+            # processa as linhas do arquivo
+            with path_dir.open(mode='r', encoding='utf-8') as file:
+                it: Iterator[tuple[int, str]] = enumerate(file)
 
-        pos_credito = 0
+                for _, linha in it:
 
-        # processa as linhas do arquivo
-        for chunk in ler_txt(path_dir):
-            data = chunk.splitlines()
-            for index in range(len(data)):
-                linha = data[index]
+                    if linha.startswith('Data'):
+                        pos_credito = linha.find('Crédito')
+                        continue
 
-                if linha.startswith('Data'):
-                    pos_credito = linha.find('Crédito')
-                    continue
+                    if (
+                        retorna_total_datas(linha) >= 1
+                        and retorna_total_valores(linha) >= 2
+                    ):
+                        lancamento.Novo()
 
-                if (
-                    RetornaTotalDatasValidas(linha) >= 1
-                    and RetornaTotalValoresValidos(linha) >= 2
-                ):
-                    lancamento.Novo()
+                        if linha[pos_credito : pos_credito + 14].find(','):
+                            lancamento.cd = 'C'
+                        else:
+                            lancamento.cd = 'D'
 
-                    if linha[pos_credito : pos_credito + 14].find(','):
-                        lancamento.cd = 'C'
-                    else:
-                        lancamento.cd = 'D'
+                        lancamento.data, linha = retorna_data_inicio_linha(linha)
 
-                    lancamento.data, linha = RetornaDataInicioLinha(linha)
+                        _, linha = retorna_valor_final_linha(linha)
 
-                    _, linha = RetornaValorFinalLinha(linha)
+                        lancamento.valor, linha = retorna_valor_final_linha(linha)
 
-                    lancamento.valor, linha = RetornaValorFinalLinha(linha)
+                        lancamento.numdoc, linha = RetornaTextoFinalLinhaAteEspacoDuplo(
+                            linha
+                        )
 
-                    lancamento.numdoc, linha = RetornaTextoFinalLinhaAteEspacoDuplo(
-                        linha
-                    )
+                        lancamento.hist = linha.strip()
 
-                    lancamento.hist = linha.strip()
+                        lancamento.incluir()
 
-                    lancamento.incluir()
+            lancamento.salvar()
 
-        lancamento.salvar()
+        except Exception as e:
+            logger.exception(f'Erro no layout {FILE}: {e}', extra={'id_task': id_task})
+            raise Exception(f'Houve um erro no layout {FILE}') from e
 
-    except Exception as e:
-        logger.exception('Erro no layout 6174', stack_info=True)
-        raise Exception('Houve um erro no layout 6174') from e
+        finally:
+            if path_dir and path_dir.exists():
+                path_dir.unlink()
 
-    finally:
-        if path_dir and path_dir.exists():
-            path_dir.unlink()
-
-        if file_obj.file_dir and file_obj.file_dir.exists():
-            file_obj.file_dir.unlink()
+            if file_obj.file_dir and file_obj.file_dir.exists():
+                file_obj.file_dir.unlink()

@@ -1,48 +1,40 @@
 import uuid
+import shutil
+
+from anyio import to_thread
 from pathlib import Path
-from typing import Generator
 
-from pydantic import BaseModel, field_serializer
+from charset_normalizer import from_path
+from fastapi import UploadFile
+from pydantic import BaseModel, FilePath
 
-
-async def save_file(bytes_file: bytes, ext_file: str = '.pdf') -> Path:
+BUFFER_SIZE: int =  128 * 1024
+async def save_file(upload_file: UploadFile, ext_file: str = '.pdf') -> Path:
     temp_dir_path = Path('temp') / f'{uuid.uuid4()}{ext_file}'
 
     temp_dir_path.parent.mkdir(parents=True, exist_ok=True)
 
-    with open(temp_dir_path, 'wb') as buffer:
-        buffer.write(await bytes_file.read())
+    def _save_copy() -> None:
+        with temp_dir_path.open('wb') as buffer:
+            shutil.copyfileobj(upload_file.file, buffer, length=BUFFER_SIZE)
 
-    return Path(temp_dir_path.resolve())
+    await to_thread.run_sync(_save_copy)
 
-
-def ler_txt(file_path: Path, chunk_size_mb: int = 100) -> Generator[str]:
-    chunk_size_bytes = chunk_size_mb * 1024 * 1024
-    buffer = b''
-    with open(file_path, 'rb') as file:
-        while True:
-            data = buffer + file.read(chunk_size_bytes)
-            if not data:
-                break
-
-            pos_last_line = data.rfind(b'\n') + 1
-
-            if pos_last_line != 0:
-                buffer = data[pos_last_line:]
-                data = data[:pos_last_line]
-            else:
-                buffer = b''
-
-            yield data.decode('utf-8', errors='ignore')
-
-        if buffer:
-            yield buffer.decode('utf-8', errors='ignore')
+    return temp_dir_path.resolve()
 
 
 class Arquivo(BaseModel):
-    file_dir: Path
+    file_dir: FilePath
     password: str
 
-    @field_serializer('file_dir')
-    def serialize_file_dir(file_dir: Path) -> str:
-        return str(file_dir)
+def get_encoding(file_dir: Path, default: str = 'utf-8') -> str:
+    try:
+        result = from_path(file_dir).best()
+
+        if not result or not result.encoding:
+            return default
+
+        return str(result.encoding)
+
+    except Exception:
+        return default

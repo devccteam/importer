@@ -1,7 +1,7 @@
 import json
 from http import HTTPStatus
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import FastAPI, Form, HTTPException, Response, UploadFile
 
@@ -22,7 +22,7 @@ logger = config_logger.setup('app')
 
 
 @app.get('/layout/{layout_id}')
-async def layout(layout_id: str, response: Response) -> dict | str:
+async def layout(layout_id: str, response: Response) -> dict[str, Any]:
     try:
         info = get_info_layout(layout_id)
 
@@ -50,7 +50,9 @@ async def converter(
 ) -> dict[str, str]:
     id = ''
     try:
-        dir_file = await save_file(file, Path(file.filename).suffix)
+
+        suffix = Path(file.filename or "").suffix
+        dir_file = await save_file(file, suffix)
 
         file_obj = Arquivo(file_dir=dir_file, password=password)
 
@@ -74,21 +76,11 @@ async def converter(
 
 
 @app.get('/convert/{id}')
-async def status(id: str) -> dict | str:
+async def status(id: str) -> dict[str, Any]:
     try:
-        data = get_status(id).data
+        data = get_status(id)
 
-        data = data.decode('utf-8')
-
-        try:
-            result = json.loads(data)
-        except json.JSONDecodeError:
-            result = data
-        except UnicodeDecodeError as e:
-            logger.exception(f'Erro ao converter a resposta da api para json: {e}')
-            raise e
-
-        return result[0]
+        return data
 
     except Exception as e:
         logger.exception(

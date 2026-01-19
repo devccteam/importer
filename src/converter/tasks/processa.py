@@ -1,11 +1,13 @@
 import json
+from pathlib import Path
 from time import time
+from typing import Any
 
 from celery import Celery, Task
 
 from converter.layouts.loader import (
     check_if_layout_file_exists,
-    obter_processador,
+    get_instance_layout
 )
 from converter.settings import settings
 from converter.uteis import config_logger
@@ -28,16 +30,16 @@ logger = config_logger.setup('app.tasks')
 
 
 @celery.task(bind=True, name='processa', time_limit=3600)
-def call_layout(self: Task, layout_id: str, file_obj: Arquivo) -> None:
+def call_layout(self: Task, layout_id: str, file_data: dict[str, Any]) -> None:
     id: str = ''
     try:
         id = self.request.id
 
         create_conversion(id)
 
-        file_obj = Arquivo(**file_obj)
+        file_obj = Arquivo.model_validate(file_data)
 
-        prc = obter_processador(str(layout_id))
+        layout = get_instance_layout(layout_id)
 
         update_conversion(id, 'Running')
         logger.info(
@@ -45,7 +47,7 @@ def call_layout(self: Task, layout_id: str, file_obj: Arquivo) -> None:
         )
 
         start_process = time()
-        prc(id, file_obj)
+        layout.processar(id, file_obj)
         end_process = time()
 
         update_conversion(id, 'Finished')
@@ -61,24 +63,13 @@ def call_layout(self: Task, layout_id: str, file_obj: Arquivo) -> None:
 
 
 def processa_arquivo(layout_id: str, file_obj: Arquivo) -> str:
-    try:
-        if check_if_layout_file_exists(layout_id):
-            task = call_layout.delay(layout_id, file_obj.model_dump())
-            return task.id
+    if check_if_layout_file_exists(layout_id):
+        task = call_layout.delay(layout_id, file_obj.model_dump(mode='json'))
+        return task.id
 
-        data = process_dll(layout_id, str(file_obj.file_dir)).data
+    data = process_dll(layout_id, str(file_obj.file_dir))
 
-        try:
-            result = json.loads(data.decode('utf-8'))
-        except json.JSONDecodeError:
-            result = data.decode('utf-8')
-        except UnicodeDecodeError as e:
-            logger.exception(f'Erro ao converter a resposta da api para json: {e}')
-            raise e
-
-        return result['id']
-    finally:
-        file_obj.file_dir.unlink()
+    return data['id']
 
 
 

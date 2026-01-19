@@ -1,6 +1,6 @@
 from datetime import date
 from decimal import Decimal
-from typing import Optional
+from typing import Any, Optional
 
 from attr import define, field, validators
 
@@ -14,7 +14,7 @@ logger = config_logger.setup('app.uteis')
 
 @define
 class Lancamento:
-    _lancamentos: list[dict[str, any]] = []
+    _lancamentos: list[dict[str, Any]] = []
     id_task: str = field(default='')
     index: int = field(default=0, validator=validators.instance_of(int))
     cd: Optional[str] = field(

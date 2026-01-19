@@ -1,30 +1,36 @@
 import re
 from datetime import date, datetime
+from typing import Final, Pattern
 
 
 def DataPadrao() -> date:
     return date(1934, 12, 12)
 
+REGEX_DATAS_VALIDAS: Final[Pattern[str]] = re.compile(r'\b\d{2}/\d{2}/(?:\d{4}|\d{2})\b')
+def retorna_total_datas(linha: str) -> int:
+    count: int = 0
+    for _ in REGEX_DATAS_VALIDAS.finditer(linha):
+        count += 1
 
-def RetornaTotalDatasValidas(linha: str) -> int:
-    return len(re.findall(r'([0-9]{2}\/[0-9]{2}\/[0-9]{2,4})', linha))
+    return count
 
 
-def RetornaDataInicioLinha(
+REGEX_DATA_INICIO: Final[Pattern[str]] = re.compile(r'^\d{2}\/\d{2}\/(\d{4}|\d{2})')
+def retorna_data_inicio_linha(
     linha: str, limpar_linha: bool = True
 ) -> tuple[date, str]:
     try:
-        regex_data_no_inicio = re.compile(r'^\d{2}\/\d{2}\/(\d{4}|\d{2})')
 
-        if not regex_data_no_inicio.search(linha):
-            return None
+        if not (match := REGEX_DATA_INICIO.match(linha)):
+            return DataPadrao(), linha
 
-        data_str = regex_data_no_inicio.search(linha).group()
+        data_str = match.group(linha)
 
-        data = datetime.strptime(data_str, '%d/%m/%Y').date()
+        fmt = '%d/%m/%Y' if len(data_str) == 10 else '%d/%m/%y'
+        data = datetime.strptime(data_str, fmt).date()
 
         if limpar_linha:
-            linha = linha.replace(data_str, '', 1)
+            linha = linha[match.end():].lstrip()
 
         return data, linha
     except Exception:

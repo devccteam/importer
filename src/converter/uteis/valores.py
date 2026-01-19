@@ -1,12 +1,17 @@
 import re
 from decimal import Decimal
+from typing import Final, Pattern
 
+REGEX_VALORES_VALIDOS: Final[Pattern[str]] = re.compile(r'([0-9]\d{0,2}(?:\.\d{3})*,\d{2})')
+def retorna_total_valores(linha: str) -> int:
+    count: int = 0
 
-def RetornaTotalValoresValidos(linha: str) -> int:
-    return len(re.findall(r'([0-9]\d{0,2}(?:\.\d{3})*,\d{2})', linha))
+    for _ in REGEX_VALORES_VALIDOS.finditer(linha):
+        count += 1
 
+    return count
 
-def RetornaValorFinalLinha(
+def retorna_valor_final_linha(
     linha: str, limpar_linha: bool = True
 ) -> tuple[Decimal, str]:
     try:

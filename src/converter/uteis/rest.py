@@ -1,10 +1,12 @@
 import json
 from http import HTTPStatus
+from pathlib import Path
+from typing import Any
 
 import urllib3
-from urllib3.response import HTTPResponse
+from urllib3.exceptions import HTTPError
 
-from converter.errors.error import error_decorator
+from converter.errors.error import APIError, error_decorator
 from converter.settings import settings
 from converter.uteis import config_logger
 
@@ -15,13 +17,16 @@ http = urllib3.PoolManager()
 
 logger = config_logger.setup('app.uteis')
 
+type ResponseAPI = dict[str, Any]
 
-def post(where: str, data: any) -> HTTPResponse:
+def post(where: str, data: dict[str, Any]) -> ResponseAPI:
     try:
+        encoded_data = json.dumps(data).encode('utf-8')
+
         response = http.request(
             'POST',
             BASE_URL + where,
-            body=json.dumps(data),
+            body=encoded_data,
             headers={
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
@@ -29,9 +34,17 @@ def post(where: str, data: any) -> HTTPResponse:
         )
 
         if response.status != HTTPStatus.CREATED:
-            raise Exception(f'Erro na requisição: {response.json()}')
+            raise APIError(f'Erro na requisição: {response.json()}')
 
-        return response
+        return decode_json(response.data)
+
+    except HTTPError as e:
+        logger.exception(
+            f'Erro na requisição post: {e}',
+            extra={'BASE_URL': BASE_URL, 'where': where},
+            stack_info=True,
+        )
+        raise APIError('Erro na requisição post', detail=str(e)) from e
     except Exception as e:
         logger.exception(
             f'Erro na requisição post: {e}',
@@ -41,12 +54,15 @@ def post(where: str, data: any) -> HTTPResponse:
         raise Exception('Erro na requisição post') from e
 
 
-def path(where: str, data: dict[any, any]) -> HTTPResponse:
+
+def path(where: str, data: dict[Any, Any]) -> ResponseAPI:
     try:
+        encoded_data = json.dumps(data).encode('utf-8')
+
         response = http.request(
             'PATCH',
             BASE_URL + where,
-            body=json.dumps(data),
+            body=encoded_data,
             headers={
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
@@ -54,20 +70,27 @@ def path(where: str, data: dict[any, any]) -> HTTPResponse:
         )
 
         if response.status != HTTPStatus.NO_CONTENT:
-            raise Exception(f'Erro na requisição: {response.json()}')
+            raise APIError(f'Erro na requisição: {response.json()}')
 
-        return response
+        return decode_json(response.data)
 
+    except HTTPError as e:
+        logger.exception(
+            f'Erro na requisição path: {e}',
+            extra={'BASE_URL': BASE_URL, 'where': where},
+            stack_info=True,
+        )
+        raise APIError('Erro na requisição path') from e
     except Exception as e:
         logger.exception(
             f'Erro na requisição path: {e}',
             extra={'BASE_URL': BASE_URL, 'where': where},
             stack_info=True,
         )
-        raise Exception('Erro na requisição path') from e
+        raise Exception('Erro desconhecido ao fazer path') from e
 
 
-def get_status(task_id: str) -> HTTPResponse:
+def get_status(task_id: str) -> ResponseAPI:
     try:
         response = http.request(
             'GET',
@@ -78,7 +101,24 @@ def get_status(task_id: str) -> HTTPResponse:
             },
         )
 
-        return response
+        data = decode_json(response.data)
+
+        if not data:
+            return {}
+
+        return data[0]
+
+
+    except HTTPError as e:
+        logger.exception(
+            f'Erro na requisição get: {e}',
+            extra={
+                'BASE_URL': BASE_URL,
+                'where': f'/conversions?id=eq.{task_id}',
+            },
+            stack_info=True,
+        )
+        raise APIError('Erro na requisição path') from e
     except Exception as e:
         logger.exception(
             f'Erro na requisição get: {e}',
@@ -88,17 +128,17 @@ def get_status(task_id: str) -> HTTPResponse:
             },
             stack_info=True,
         )
-        raise Exception('Erro na requisição path') from e
+        raise Exception('Erro desconhecido ao verificar o status') from e
 
 
 @error_decorator('Houve um erro ao inserir em releases')
-def insert_releases(data: dict) -> HTTPResponse:
+def insert_releases(data: dict[str, Any]) -> ResponseAPI:
     response = post('/releases', data)
     return response
 
 
 @error_decorator('Houve um erro ao criar em conversion')
-def create_conversion(id: str) -> HTTPResponse:
+def create_conversion(id: str) -> ResponseAPI:
     data = {'id': id}
 
     response = post('/conversions', data)
@@ -107,7 +147,7 @@ def create_conversion(id: str) -> HTTPResponse:
 
 
 @error_decorator('Houve um erro ao atualizar o status em conversion')
-def update_conversion(id: str, status: str) -> HTTPResponse:
+def update_conversion(id: str, status: str) -> ResponseAPI:
     data = {'updated_at': 'now()', 'status': status}
 
     response = path(f'/conversions?id=eq.{id}', data)
@@ -115,7 +155,7 @@ def update_conversion(id: str, status: str) -> HTTPResponse:
     return response
 
 
-def check_dll(layout_id: str) -> HTTPResponse:
+def check_dll(layout_id: str) -> ResponseAPI:
     try:
         response = http.request(
             'GET',
@@ -126,17 +166,24 @@ def check_dll(layout_id: str) -> HTTPResponse:
             },
         )
 
-        return response
+        return decode_json(response.data)
+    except HTTPError as e:
+        logger.exception(
+            f'Erro na requisição /layout: {e}',
+            extra={'BASE_URL': BASE_DLL_URL, 'where': f'/layout/{layout_id}'},
+            stack_info=True,
+        )
+        raise APIError('Erro ao checar a DLL na API', detail=str(e)) from e
     except Exception as e:
         logger.exception(
             f'Erro na requisição /layout: {e}',
             extra={'BASE_URL': BASE_DLL_URL, 'where': f'/layout/{layout_id}'},
             stack_info=True,
         )
-        raise e
+        raise Exception('Erro não mapeado ao checar a DLL') from e
 
 
-def process_dll(layout_id: str, file: str) -> HTTPResponse:
+def process_dll(layout_id: str, file: str) -> ResponseAPI:
     try:
         with open(file, 'rb') as f:
             content = f.read()
@@ -147,11 +194,35 @@ def process_dll(layout_id: str, file: str) -> HTTPResponse:
             fields={'file': (file, content, 'text/plain')},
         )
 
-        return response
-    except Exception as e:
+        return decode_json(response.data)
+    except HTTPError as e:
         logger.exception(
             f'Erro na requisição /convert/layout: {e}',
             extra={'BASE_URL': BASE_DLL_URL, 'where': f'/layout/{layout_id}'},
             stack_info=True,
         )
-        raise e
+        raise APIError('Erro ao enviar o arquivo para ser processado na DLL', detail=str(e)) from e
+    except Exception as e:
+        logger.exception(
+            f'Erro não mapeado na requisição /convert/layout: {e}',
+            extra={'BASE_URL': BASE_DLL_URL, 'where': f'/layout/{layout_id}'},
+            stack_info=True
+        )
+        raise Exception('Erro desconhecido ao enviar DLL para processamento') from e
+    finally:
+        Path(file).unlink()
+
+def decode_json(data: bytes, encoding: str = 'utf-8') -> ResponseAPI:
+    if not data:
+        return {}
+
+    try:
+        decoded_data = data.decode(encoding)
+
+        return json.loads(decoded_data)
+
+    except UnicodeDecodeError as e:
+        raise APIError('Falha ao decodificar texto da resposta', detail=str(e))
+    except json.JSONDecodeError as e:
+        raise APIError('Resposta da API não é um json válido', detail=str(e))
+
