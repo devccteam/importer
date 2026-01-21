@@ -1,14 +1,9 @@
-import json
-from pathlib import Path
 from time import time
 from typing import Any
 
 from celery import Celery, Task
 
-from converter.layouts.loader import (
-    check_if_layout_file_exists,
-    get_instance_layout
-)
+from converter.layouts.loader import check_if_layout_file_exists, get_instance_layout
 from converter.settings import settings
 from converter.uteis import config_logger
 from converter.uteis.arquivos import Arquivo
@@ -42,9 +37,7 @@ def call_layout(self: Task, layout_id: str, file_data: dict[str, Any]) -> None:
         layout = get_instance_layout(layout_id)
 
         update_conversion(id, 'Running')
-        logger.info(
-            f'[Iniciando] task: {id}, name_file: {file_obj.file_dir.name}'
-        )
+        logger.info(f'[Iniciando] task: {id}, name_file: {file_obj.file_dir.name}')
 
         start_process = time()
         layout.processar(id, file_obj)
@@ -70,7 +63,6 @@ def processa_arquivo(layout_id: str, file_obj: Arquivo) -> str:
     data = process_dll(layout_id, str(file_obj.file_dir))
 
     return data['id']
-
 
 
 if __name__ == '__main__':

@@ -19,6 +19,7 @@ logger = config_logger.setup('app.uteis')
 
 type ResponseAPI = dict[str, Any]
 
+
 def post(where: str, data: dict[str, Any]) -> ResponseAPI:
     try:
         encoded_data = json.dumps(data).encode('utf-8')
@@ -52,7 +53,6 @@ def post(where: str, data: dict[str, Any]) -> ResponseAPI:
             stack_info=True,
         )
         raise Exception('Erro na requisição post') from e
-
 
 
 def path(where: str, data: dict[Any, Any]) -> ResponseAPI:
@@ -108,10 +108,9 @@ def get_status(task_id: str) -> ResponseAPI:
 
         return data[0]
 
-
     except HTTPError as e:
         logger.exception(
-            f'Erro na requisição get: {e}',
+            'Erro na requisição get',
             extra={
                 'BASE_URL': BASE_URL,
                 'where': f'/conversions?id=eq.{task_id}',
@@ -133,26 +132,21 @@ def get_status(task_id: str) -> ResponseAPI:
 
 @error_decorator('Houve um erro ao inserir em releases')
 def insert_releases(data: dict[str, Any]) -> ResponseAPI:
-    response = post('/releases', data)
-    return response
+    return post('/releases', data)
 
 
 @error_decorator('Houve um erro ao criar em conversion')
-def create_conversion(id: str) -> ResponseAPI:
-    data = {'id': id}
+def create_conversion(id_task: str) -> ResponseAPI:
+    data = {'id': id_task}
 
-    response = post('/conversions', data)
-
-    return response
+    return post('/conversions', data)
 
 
 @error_decorator('Houve um erro ao atualizar o status em conversion')
-def update_conversion(id: str, status: str) -> ResponseAPI:
+def update_conversion(id_task: str, status: str) -> ResponseAPI:
     data = {'updated_at': 'now()', 'status': status}
 
-    response = path(f'/conversions?id=eq.{id}', data)
-
-    return response
+    return path(f'/conversions?id=eq.{id_task}', data)
 
 
 def check_dll(layout_id: str) -> ResponseAPI:
@@ -201,16 +195,21 @@ def process_dll(layout_id: str, file: str) -> ResponseAPI:
             extra={'BASE_URL': BASE_DLL_URL, 'where': f'/layout/{layout_id}'},
             stack_info=True,
         )
-        raise APIError('Erro ao enviar o arquivo para ser processado na DLL', detail=str(e)) from e
+        raise APIError(
+            'Erro ao enviar o arquivo para ser processado na DLL', detail=str(e)
+        ) from e
     except Exception as e:
         logger.exception(
             f'Erro não mapeado na requisição /convert/layout: {e}',
             extra={'BASE_URL': BASE_DLL_URL, 'where': f'/layout/{layout_id}'},
-            stack_info=True
+            stack_info=True,
         )
-        raise Exception('Erro desconhecido ao enviar DLL para processamento') from e
+        raise Exception(
+            'Erro desconhecido ao enviar arquivo para processamento de DLL'
+        ) from e
     finally:
         Path(file).unlink()
+
 
 def decode_json(data: bytes, encoding: str = 'utf-8') -> ResponseAPI:
     if not data:
@@ -218,6 +217,7 @@ def decode_json(data: bytes, encoding: str = 'utf-8') -> ResponseAPI:
 
     try:
         decoded_data = data.decode(encoding)
+        logger.debug(decoded_data)
 
         return json.loads(decoded_data)
 
@@ -225,4 +225,3 @@ def decode_json(data: bytes, encoding: str = 'utf-8') -> ResponseAPI:
         raise APIError('Falha ao decodificar texto da resposta', detail=str(e))
     except json.JSONDecodeError as e:
         raise APIError('Resposta da API não é um json válido', detail=str(e))
-

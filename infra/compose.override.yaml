@@ -77,6 +77,7 @@ services:
       context: ../
       dockerfile: infra/Dockerfile
       target: development
+    command: "uv run --no-dev celery -A src.converter.tasks.processa flower"
 
   postgrest:
     container_name: "rest-banco"

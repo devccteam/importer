@@ -1,17 +1,17 @@
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Iterator
 
 from converter.conversores.pymupdf import extract_text_from_pdf
 from converter.layouts.lancamento import Lancamento
 from converter.layouts.layout_base import LayoutBase
 from converter.layouts.layout_info import LayoutInfo
 from converter.uteis import config_logger
-from converter.uteis.arquivos import Arquivo, ler_txt
+from converter.uteis.arquivos import Arquivo
 from converter.uteis.datas import (
     retorna_data_inicio_linha,
     retorna_total_datas,
 )
-from converter.uteis.texto import RetornaTextoFinalLinhaAteEspacoDuplo
+from converter.uteis.texto import retorna_texto_final_linha_ate_espaco_duplo
 from converter.uteis.valores import (
     retorna_total_valores,
     retorna_valor_final_linha,
@@ -20,6 +20,7 @@ from converter.uteis.valores import (
 logger = config_logger.setup('app.layouts')
 
 FILE = Path(__file__).stem
+
 
 class Processador(LayoutBase):
     layout = LayoutInfo('SOFTWARE', 'GENESIS', 'RELATÓRIO DE MOVIMENTAÇÕES FINANCEIRAS')
@@ -39,7 +40,6 @@ class Processador(LayoutBase):
                 it: Iterator[tuple[int, str]] = enumerate(file)
 
                 for _, linha in it:
-
                     if linha.startswith('Data'):
                         pos_credito = linha.find('Crédito')
                         continue
@@ -61,8 +61,8 @@ class Processador(LayoutBase):
 
                         lancamento.valor, linha = retorna_valor_final_linha(linha)
 
-                        lancamento.numdoc, linha = RetornaTextoFinalLinhaAteEspacoDuplo(
-                            linha
+                        lancamento.numdoc, linha = (
+                            retorna_texto_final_linha_ate_espaco_duplo(linha)
                         )
 
                         lancamento.hist = linha.strip()

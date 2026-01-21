@@ -1,19 +1,19 @@
-import json
 from http import HTTPStatus
 from pathlib import Path
 from typing import Annotated, Any
 
-from fastapi import FastAPI, Form, HTTPException, Response, UploadFile
+from fastapi import FastAPI, Form, Header, Request, Response, UploadFile
+from fastapi.responses import JSONResponse
 
+from converter.errors.error import BaseError
 from converter.layouts.loader import (
     get_info_layout,
 )
 from converter.tasks.processa import processa_arquivo
 from converter.uteis import config_logger
-from converter.uteis.arquivos import Arquivo, save_file
+from converter.uteis.arquivos import Arquivo, save_file, save_layout, valida_layout
 from converter.uteis.rest import (
     get_status,
-    update_conversion,
 )
 
 app = FastAPI()
@@ -21,77 +21,56 @@ app = FastAPI()
 logger = config_logger.setup('app')
 
 
+@app.exception_handler(BaseError)
+async def base_error_handler(_: Request, exc: BaseError) -> JSONResponse:
+    logger.exception(f'Erro interno: {exc.detail}')
+
+    return JSONResponse(status_code=exc.code, content={'message': exc.message})
+
+
 @app.get('/layout/{layout_id}')
 async def layout(layout_id: str, response: Response) -> dict[str, Any]:
-    try:
-        info = get_info_layout(layout_id)
+    info = get_info_layout(layout_id)
 
-        if type(info) is not dict:
-            response.status_code = HTTPStatus.NOT_FOUND
+    if type(info) is not dict:
+        response.status_code = HTTPStatus.NOT_FOUND
 
-        return info
-    except Exception as e:
-        logger.exception(
-            f'Erro no endpoint /layout: {e}',
-            extra={'layout_id': layout_id},
-            stack_info=True,
-        )
-        raise HTTPException(
-            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
-            detail={
-                'message': 'Ocorreu um erro interno. Tente novamente mais tarde.',
-            },
-        )
+    return info
+
+
+@app.post('/layout/upload/{layout_id}', status_code=HTTPStatus.NO_CONTENT)
+async def upload_layout(layout_id: int, file: UploadFile) -> None:
+    await save_layout(str(layout_id), file.file)
+
+
+@app.post('/layout/validate/{layout_id}', status_code=HTTPStatus.OK)
+async def validate_layout(layout_id: int) -> None:
+    await valida_layout(str(layout_id))
 
 
 @app.post('/convert/layout/{layout_id}', status_code=HTTPStatus.CREATED)
 async def converter(
-    layout_id: int, file: UploadFile, password: Annotated[str, Form()] = ''
+    layout_id: int,
+    file: UploadFile,
+    password: Annotated[str, Form()] = '',
+    x_sandbox: Annotated[bool, Header(alias='X-Sandbox')] = False,
 ) -> dict[str, str]:
-    id = ''
-    try:
+    id_task = ''
+    layout: str = str(layout_id)
 
-        suffix = Path(file.filename or "").suffix
-        dir_file = await save_file(file, suffix)
+    suffix = Path(file.filename or '').suffix
+    dir_file = await save_file(file.file, suffix)
 
-        file_obj = Arquivo(file_dir=dir_file, password=password)
+    file_obj = Arquivo(file_dir=dir_file, password=password)
 
-        id = processa_arquivo(str(layout_id), file_obj)
+    if x_sandbox:
+        layout = f'{layout}_sandbox'
 
-        return {'id': id, 'status': 'Running'}
-    except Exception as e:
-        logger.exception(
-            f'Erro na no endpoint /converter: {e}',
-            extra={'layout_id': layout_id, 'id': id},
-            stack_info=True,
-        )
-        update_conversion(id, 'Error')
-        raise HTTPException(
-            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
-            detail={
-                'status': 'FAILURE',
-                'message': 'Ocorreu um erro interno. Tente novamente mais tarde.',
-            },
-        )
+    id_task = processa_arquivo(layout, file_obj)
+
+    return {'id': id_task, 'status': 'Running'}
 
 
-@app.get('/convert/{id}')
-async def status(id: str) -> dict[str, Any]:
-    try:
-        data = get_status(id)
-
-        return data
-
-    except Exception as e:
-        logger.exception(
-            f'Erro na no endpoint /status: {e}',
-            extra={'id': id},
-            stack_info=True,
-        )
-        raise HTTPException(
-            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
-            detail={
-                'status': 'FAILURE',
-                'message': 'Ocorreu um erro interno. Tente novamente mais tarde.',
-            },
-        )
+@app.get('/convert/{id_task}')
+async def status(id_task: str) -> dict[str, Any]:
+    return get_status(id_task)
