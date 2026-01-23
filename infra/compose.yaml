@@ -16,7 +16,7 @@ services:
       - URL_API_PGRST=https://converted.conciliadorcontabil.com.br
       - URL_API_DLL=http://converter.conciliadorcontabil.com.br:9999
       - CHUNK_TO_POST=500
-    image: matheusbosi/devconverter:latest
+    image: matheusbosi/importer:latest
     user: "1000:1000"
     command: "uv run --no-dev uvicorn --host 0.0.0.0 converter.server:app"
     ports:
@@ -33,7 +33,7 @@ services:
       - URL_API_PGRST=https://converted.conciliadorcontabil.com.br
       - URL_API_DLL=http://converter.conciliadorcontabil.com.br:9999
       - CHUNK_TO_POST=500
-    image: matheusbosi/devconverter:latest 
+    image: matheusbosi/importer:latest 
     user: "1000:1000"
     command: "uv run --no-dev celery -A src.converter.tasks.processa worker -l INFO -P gevent -c 100"
     volumes:
@@ -62,7 +62,7 @@ services:
       - URL_API_PGRST=https://converted.conciliadorcontabil.com.br
       - URL_API_DLL=http://converter.conciliadorcontabil.com.br:9999
       - CHUNK_TO_POST=500
-    image: matheusbosi/devconverter:latest
+    image: matheusbosi/importer:latest
     user: "1000:1000"
     command: "uv run --no-dev celery -A src.converter.tasks.processa flower --basic-auth=admin:converter_admin"
     ports:
