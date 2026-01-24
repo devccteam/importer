@@ -25,7 +25,7 @@ dependencies = [
 
 [tool.taskipy.tasks]
 docker-watch = "docker compose -f infra/compose.yaml -f infra/compose.override.yaml watch"
-docker-down = "docker compose -f infra/compose.yaml -f infra/compose.override.yaml down"
+docker-down = "docker compose -f infra/compose.yaml -f infra/compose.override.yaml down -v"
 
 [tool.ruff]
 line-length = 88
