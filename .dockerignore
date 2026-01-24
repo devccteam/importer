@@ -12,3 +12,6 @@ wheels/
 infra/
 temp/
 logs/
+.git/
+.ruff_cache/
+docs/
