@@ -1,6 +1,6 @@
 from datetime import date
 from decimal import Decimal
-from typing import Any, Optional
+from typing import Any
 
 from attr import define, field, validators
 
@@ -14,66 +14,58 @@ logger = config_logger.setup('app.uteis')
 
 @define
 class Lancamento:
-    _lancamentos: list[dict[str, Any]] = []
+    _lancamentos: list[dict[str, Any]] = field(factory=list)
     id_task: str = field(default='')
     index: int = field(default=0, validator=validators.instance_of(int))
-    cd: Optional[str] = field(
-        default=None, validator=validators.in_(['D', 'C', None])
-    )
-    cd1: Optional[str] = field(
-        default=None, validator=validators.in_(['D', 'C', None])
-    )
-    cd2: Optional[str] = field(
-        default=None, validator=validators.in_(['D', 'C', None])
-    )
-    cd3: Optional[str] = field(
-        default=None, validator=validators.in_(['D', 'C', None])
-    )
-    data: Optional[date] = field(
+    cd: str | None = field(default=None, validator=validators.in_(['D', 'C', None]))
+    cd1: str | None = field(default=None, validator=validators.in_(['D', 'C', None]))
+    cd2: str | None = field(default=None, validator=validators.in_(['D', 'C', None]))
+    cd3: str | None = field(default=None, validator=validators.in_(['D', 'C', None]))
+    data: date | None = field(
         default=None,
         validator=validators.optional(validators.instance_of(date)),
     )
-    data1: Optional[date] = field(
+    data1: date | None = field(
         default=None,
         validator=validators.optional(validators.instance_of(date)),
     )
-    data2: Optional[date] = field(
+    data2: date | None = field(
         default=None,
         validator=validators.optional(validators.instance_of(date)),
     )
-    data3: Optional[date] = field(
+    data3: date | None = field(
         default=None,
         validator=validators.optional(validators.instance_of(date)),
     )
-    numdoc: Optional[str] = field(
+    numdoc: str | None = field(
         default=None,
         validator=validators.optional(validators.instance_of(str)),
     )
-    numdoc1: Optional[str] = field(
+    numdoc1: str | None = field(
         default=None,
         validator=validators.optional(validators.instance_of(str)),
     )
-    numdoc2: Optional[str] = field(
+    numdoc2: str | None = field(
         default=None,
         validator=validators.optional(validators.instance_of(str)),
     )
-    numdoc3: Optional[str] = field(
+    numdoc3: str | None = field(
         default=None,
         validator=validators.optional(validators.instance_of(str)),
     )
-    valor: Optional[Decimal] = field(
+    valor: Decimal | None = field(
         default=None,
         validator=validators.optional(validators.instance_of(Decimal)),
     )
-    valor1: Optional[Decimal] = field(
+    valor1: Decimal | None = field(
         default=None,
         validator=validators.optional(validators.instance_of(Decimal)),
     )
-    valor2: Optional[Decimal] = field(
+    valor2: Decimal | None = field(
         default=None,
         validator=validators.optional(validators.instance_of(Decimal)),
     )
-    valor3: Optional[Decimal] = field(
+    valor3: Decimal | None = field(
         default=None,
         validator=validators.optional(validators.instance_of(Decimal)),
     )
@@ -104,91 +96,87 @@ class Lancamento:
     bonificacao: Decimal = field(
         default=Decimal(0), validator=validators.instance_of(Decimal)
     )
-    iof: Decimal = field(
-        default=Decimal(0), validator=validators.instance_of(Decimal)
-    )
-    mora: Decimal = field(
-        default=Decimal(0), validator=validators.instance_of(Decimal)
-    )
+    iof: Decimal = field(default=Decimal(0), validator=validators.instance_of(Decimal))
+    mora: Decimal = field(default=Decimal(0), validator=validators.instance_of(Decimal))
     seguro: Decimal = field(
         default=Decimal(0), validator=validators.instance_of(Decimal)
     )
     tarifa: Decimal = field(
         default=Decimal(0), validator=validators.instance_of(Decimal)
     )
-    hist: Optional[str] = field(
+    hist: str | None = field(
         default=None,
         validator=validators.optional(validators.instance_of(str)),
     )
-    hist1: Optional[str] = field(
+    hist1: str | None = field(
         default=None,
         validator=validators.optional(validators.instance_of(str)),
     )
-    hist2: Optional[str] = field(
+    hist2: str | None = field(
         default=None,
         validator=validators.optional(validators.instance_of(str)),
     )
-    hist3: Optional[str] = field(
+    hist3: str | None = field(
         default=None,
         validator=validators.optional(validators.instance_of(str)),
     )
-    complemento: Optional[str] = field(
+    complemento: str | None = field(
         default=None,
         validator=validators.optional(validators.instance_of(str)),
     )
-    parcela: Optional[str] = field(
+    parcela: str | None = field(
         default=None,
         validator=validators.optional(validators.instance_of(str)),
     )
-    banco: Optional[str] = field(
+    banco: str | None = field(
         default=None,
         validator=validators.optional(validators.instance_of(str)),
     )
-    filial: Optional[str] = field(
+    filial: str | None = field(
         default=None,
         validator=validators.optional(validators.instance_of(str)),
     )
-    fornecedor: Optional[str] = field(
+    fornecedor: str | None = field(
         default=None,
         validator=validators.optional(validators.instance_of(str)),
     )
-    cpfcnpj_fornecedor: Optional[str] = field(
+    cpfcnpj_fornecedor: str | None = field(
         default=None,
         validator=validators.optional(validators.instance_of(str)),
     )
-    especie: Optional[str] = field(
+    especie: str | None = field(
         default=None,
         validator=validators.optional(validators.instance_of(str)),
     )
-    serie: Optional[str] = field(
+    serie: str | None = field(
         default=None,
         validator=validators.optional(validators.instance_of(str)),
     )
-    inf_adicional: Optional[str] = field(
+    inf_adicional: str | None = field(
         default=None,
         validator=validators.optional(validators.instance_of(str)),
     )
-    inf_adicional3: Optional[str] = field(
+    inf_adicional3: str | None = field(
         default=None,
         validator=validators.optional(validators.instance_of(str)),
     )
-    conta_debito: Optional[str] = field(
+    conta_debito: str | None = field(
         default=None,
         validator=validators.optional(validators.instance_of(str)),
     )
-    conta_credito: Optional[str] = field(
+    conta_credito: str | None = field(
         default=None,
         validator=validators.optional(validators.instance_of(str)),
     )
-    conta_reduzida: Optional[str] = field(
+    conta_reduzida: str | None = field(
         default=None,
         validator=validators.optional(validators.instance_of(str)),
     )
-    conta_completa: Optional[str] = field(
+    conta_completa: str | None = field(
         default=None,
         validator=validators.optional(validators.instance_of(str)),
     )
-    conta_descricao: Optional[str] = field(
+    conta_descricao: str | None = field(
         default=None,
         validator=validators.optional(validators.instance_of(str)),
     )
@@ -244,68 +232,70 @@ class Lancamento:
         self.conta_descricao = None
 
     def incluir(self) -> None:
-        self._lancamentos.append({
-            'conversions_id': self.id_task,
-            'index': self.index,
-            'cd': {
-                'cd': self.cd,
-                'cd1': self.cd1,
-                'cd2': self.cd2,
-                'cd3': self.cd3,
-            },
-            'complement': self.complemento,
-            'dates': {
-                'data': self.data.isoformat() if self.data else None,
-                'data1': self.data1.isoformat() if self.data1 else None,
-                'data2': self.data2.isoformat() if self.data2 else None,
-                'data3': self.data3.isoformat() if self.data3 else None,
-            },
-            'descriptions': {
-                'hist': self.hist,
-                'hist1': self.hist1,
-                'hist2': self.hist2,
-                'hist3': self.hist3,
-            },
-            'documents': {
-                'numdoc': self.numdoc,
-                'numdoc1': self.numdoc1,
-                'numdoc2': self.numdoc2,
-                'numdoc3': self.numdoc3,
-            },
-            'parcel': self.parcela,
-            'supplier': self.fornecedor,
-            'identification_supplier': self.cpfcnpj_fornecedor,
-            'bank': self.banco,
-            'branch': self.filial,
-            'type': self.especie,
-            'series': self.serie,
-            'additional_information': self.inf_adicional,
-            'additional_information_add': self.inf_adicional3,
-            'values': {
-                'valor': str(self.valor) if self.valor else None,
-                'valor1': str(self.valor1) if self.valor1 else None,
-                'valor2': str(self.valor2) if self.valor2 else None,
-                'valor3': str(self.valor3) if self.valor3 else None,
-            },
-            'increase': str(self.acrescimo),
-            'interest': str(self.juros),
-            'fine': str(self.multa),
-            'discount': str(self.desconto),
-            'return': str(self.devolucao),
-            'expense': str(self.despesa),
-            'other': str(self.outros),
-            'rebate': str(self.abatimento),
-            'bonus': str(self.bonificacao),
-            'iof': str(self.iof),
-            'mora': str(self.mora),
-            'insurance': str(self.seguro),
-            'rate': str(self.tarifa),
-            'debit_account': self.conta_debito,
-            'credit_account': self.conta_credito,
-            'reduced_account': self.conta_reduzida,
-            'full_account': self.conta_completa,
-            'account_description': self.conta_descricao,
-        })
+        self._lancamentos.append(
+            {
+                'conversions_id': self.id_task,
+                'index': self.index,
+                'cd': {
+                    'cd': self.cd,
+                    'cd1': self.cd1,
+                    'cd2': self.cd2,
+                    'cd3': self.cd3,
+                },
+                'complement': self.complemento,
+                'dates': {
+                    'data': self.data.isoformat() if self.data else None,
+                    'data1': self.data1.isoformat() if self.data1 else None,
+                    'data2': self.data2.isoformat() if self.data2 else None,
+                    'data3': self.data3.isoformat() if self.data3 else None,
+                },
+                'descriptions': {
+                    'hist': self.hist,
+                    'hist1': self.hist1,
+                    'hist2': self.hist2,
+                    'hist3': self.hist3,
+                },
+                'documents': {
+                    'numdoc': self.numdoc,
+                    'numdoc1': self.numdoc1,
+                    'numdoc2': self.numdoc2,
+                    'numdoc3': self.numdoc3,
+                },
+                'parcel': self.parcela,
+                'supplier': self.fornecedor,
+                'identification_supplier': self.cpfcnpj_fornecedor,
+                'bank': self.banco,
+                'branch': self.filial,
+                'type': self.especie,
+                'series': self.serie,
+                'additional_information': self.inf_adicional,
+                'additional_information_add': self.inf_adicional3,
+                'values': {
+                    'valor': str(self.valor) if self.valor else None,
+                    'valor1': str(self.valor1) if self.valor1 else None,
+                    'valor2': str(self.valor2) if self.valor2 else None,
+                    'valor3': str(self.valor3) if self.valor3 else None,
+                },
+                'increase': str(self.acrescimo),
+                'interest': str(self.juros),
+                'fine': str(self.multa),
+                'discount': str(self.desconto),
+                'return': str(self.devolucao),
+                'expense': str(self.despesa),
+                'other': str(self.outros),
+                'rebate': str(self.abatimento),
+                'bonus': str(self.bonificacao),
+                'iof': str(self.iof),
+                'mora': str(self.mora),
+                'insurance': str(self.seguro),
+                'rate': str(self.tarifa),
+                'debit_account': self.conta_debito,
+                'credit_account': self.conta_credito,
+                'reduced_account': self.conta_reduzida,
+                'full_account': self.conta_completa,
+                'account_description': self.conta_descricao,
+            }
+        )
 
         self.index = self.index + 1
 
@@ -319,6 +309,7 @@ class Lancamento:
         except Exception as e:
             logger.exception(
                 f'Erro ao chamar função que salva no banco:\n {e}',
+                extra={'id_task': self.id_task},
                 stack_info=True,
             )
             raise Exception('Erro ao tentar salvar no banco') from e
