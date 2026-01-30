@@ -26,32 +26,32 @@ logger = config_logger.setup('app.tasks')
 
 @celery.task(bind=True, name='processa', time_limit=3600)
 def call_layout(self: Task, layout_id: str, file_data: dict[str, Any]) -> None:
-    id: str = ''
+    id_task: str = ''
     try:
-        id = self.request.id
+        id_task = self.request.id
 
-        create_conversion(id)
+        create_conversion(id_task)
 
         file_obj = Arquivo.model_validate(file_data)
 
         layout = get_instance_layout(layout_id)
 
-        update_conversion(id, 'Running')
-        logger.info(f'[Iniciando] task: {id}, name_file: {file_obj.file_dir.name}')
+        update_conversion(id_task, 'Running')
+        logger.info(f'[Iniciando] task: {id_task}, name_file: {file_obj.file_dir.name}')
 
         start_process = time()
-        layout.processar(id, file_obj)
+        layout.processar(id_task, file_obj)
         end_process = time()
 
-        update_conversion(id, 'Finished')
+        update_conversion(id_task, 'Finished')
         logger.info(
-            f'[Finalizou] task: s{id}, name_file: {file_obj.file_dir.name}',
+            f'[Finalizou] task: {id_task}, name_file: {file_obj.file_dir.name}',
             extra={'Tempo total': f'{end_process - start_process:.2f}s'},
         )
 
     except Exception as e:
-        update_conversion(id, 'Error')
-        logger.exception(f'Erro na conversão: {id}', stack_info=True)
+        update_conversion(id_task, 'Error')
+        logger.exception(f'Erro na conversão: {id_task}', stack_info=True)
         raise Exception(f'Erro na execução da função do {layout_id}.py') from e
 
 
@@ -60,7 +60,7 @@ def processa_arquivo(layout_id: str, file_obj: Arquivo) -> str:
         task = call_layout.delay(layout_id, file_obj.model_dump(mode='json'))
         return task.id
 
-    data = process_dll(layout_id, str(file_obj.file_dir))
+    data = process_dll(layout_id, file_obj)
 
     return data['id']
 

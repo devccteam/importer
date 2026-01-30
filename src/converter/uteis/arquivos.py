@@ -79,7 +79,8 @@ async def valida_layout(layout_id: str) -> None:
 
 class Arquivo(BaseModel):
     file_dir: FilePath
-    password: str
+    password: str = ''
+    input_val: dict[str, str] = {'': ''}
 
 
 def get_encoding(file_dir: Path, default: str = 'utf-8') -> str:

@@ -9,6 +9,7 @@ from urllib3.exceptions import HTTPError
 from converter.errors.error import APIError, error_decorator
 from converter.settings import settings
 from converter.uteis import config_logger
+from converter.uteis.arquivos import Arquivo
 
 BASE_URL = settings.URL_API_PGRST
 BASE_DLL_URL = settings.URL_API_DLL
@@ -37,7 +38,10 @@ def post(where: str, data: dict[str, Any]) -> ResponseAPI:
         if response.status != HTTPStatus.CREATED:
             raise APIError(f'Erro na requisição: {response.json()}')
 
-        return decode_json(response.data)
+        if not response.data:
+            return {}
+
+        return response.json()
 
     except HTTPError as e:
         logger.exception(
@@ -72,7 +76,10 @@ def path(where: str, data: dict[Any, Any]) -> ResponseAPI:
         if response.status != HTTPStatus.NO_CONTENT:
             raise APIError(f'Erro na requisição: {response.json()}')
 
-        return decode_json(response.data)
+        if not response.data:
+            return {}
+
+        return response.json()
 
     except HTTPError as e:
         logger.exception(
@@ -101,7 +108,7 @@ def get_status(task_id: str) -> ResponseAPI:
             },
         )
 
-        data = decode_json(response.data)
+        data = response.json()
 
         if not data:
             return {}
@@ -160,7 +167,7 @@ def check_dll(layout_id: str) -> ResponseAPI:
             },
         )
 
-        return decode_json(response.data)
+        return response.json()
     except HTTPError as e:
         logger.exception(
             f'Erro na requisição /layout: {e}',
@@ -177,18 +184,24 @@ def check_dll(layout_id: str) -> ResponseAPI:
         raise Exception('Erro não mapeado ao checar a DLL') from e
 
 
-def process_dll(layout_id: str, file: str) -> ResponseAPI:
+def process_dll(layout_id: str, file: Arquivo) -> ResponseAPI:
     try:
-        with open(file, 'rb') as f:
+        with open(file.file_dir, 'rb') as f:
             content = f.read()
+
+        form_data = {
+            'file': (file.file_dir.name, content),
+            'password': file.password,
+            'input': json.dumps(file.input_val),
+        }
 
         response = http.request(
             'POST',
             BASE_DLL_URL + f'/convert/layout/{layout_id}',
-            fields={'file': (file, content, 'text/plain')},
+            fields=form_data,
         )
 
-        return decode_json(response.data)
+        return response.json()
     except HTTPError as e:
         logger.exception(
             f'Erro na requisição /convert/layout: {e}',
@@ -208,20 +221,4 @@ def process_dll(layout_id: str, file: str) -> ResponseAPI:
             'Erro desconhecido ao enviar arquivo para processamento de DLL'
         ) from e
     finally:
-        Path(file).unlink()
-
-
-def decode_json(data: bytes, encoding: str = 'utf-8') -> ResponseAPI:
-    if not data:
-        return {}
-
-    try:
-        decoded_data = data.decode(encoding)
-        logger.debug(decoded_data)
-
-        return json.loads(decoded_data)
-
-    except UnicodeDecodeError as e:
-        raise APIError('Falha ao decodificar texto da resposta', detail=str(e))
-    except json.JSONDecodeError as e:
-        raise APIError('Resposta da API não é um json válido', detail=str(e))
+        Path(file.file_dir).unlink()

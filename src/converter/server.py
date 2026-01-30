@@ -1,3 +1,4 @@
+import json
 from http import HTTPStatus
 from pathlib import Path
 from typing import Annotated, Any
@@ -53,15 +54,24 @@ async def converter(
     layout_id: int,
     file: UploadFile,
     password: Annotated[str, Form()] = '',
+    input_val: Annotated[str, Form(alias='input')] = '',
     x_sandbox: Annotated[bool, Header(alias='X-Sandbox')] = False,
 ) -> dict[str, str]:
     id_task = ''
+    input_json = {'': ''}
+
     layout: str = str(layout_id)
 
     suffix = Path(file.filename or '').suffix
     dir_file = await save_file(file.file, suffix)
 
-    file_obj = Arquivo(file_dir=dir_file, password=password)
+    if input_val:
+        try:
+            input_json = json.loads(input_val)
+        except json.JSONDecodeError:
+            return {'erro': 'JSON inválido'}
+
+    file_obj = Arquivo(file_dir=dir_file, password=password, input_val=input_json)
 
     if x_sandbox:
         layout = f'{layout}_sandbox'
