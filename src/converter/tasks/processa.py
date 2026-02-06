@@ -1,10 +1,10 @@
 from time import time
 from typing import Any
 
-from celery import Celery, Task
+from celery import Task
 
 from converter.layouts.loader import check_if_layout_file_exists, get_instance_layout
-from converter.settings import settings
+from converter.tasks.config import celery
 from converter.uteis import config_logger
 from converter.uteis.arquivos import Arquivo
 from converter.uteis.rest import (
@@ -12,14 +12,6 @@ from converter.uteis.rest import (
     process_dll,
     update_conversion,
 )
-
-redis_host = settings.REDIS_HOST
-redis_port = settings.REDIS_PORT
-
-broker = f'redis://{redis_host}:{redis_port}/0'
-
-celery = Celery('tasks', broker=broker, backend=broker)
-
 
 logger = config_logger.setup('app.tasks')
 
@@ -29,8 +21,6 @@ def call_layout(self: Task, layout_id: str, file_data: dict[str, Any]) -> None:
     id_task: str = ''
     try:
         id_task = self.request.id
-
-        create_conversion(id_task)
 
         file_obj = Arquivo.model_validate(file_data)
 
@@ -58,12 +48,9 @@ def call_layout(self: Task, layout_id: str, file_data: dict[str, Any]) -> None:
 def processa_arquivo(layout_id: str, file_obj: Arquivo) -> str:
     if check_if_layout_file_exists(layout_id):
         task = call_layout.delay(layout_id, file_obj.model_dump(mode='json'))
+        create_conversion(task.id)
         return task.id
 
     data = process_dll(layout_id, file_obj)
 
     return data['id']
-
-
-if __name__ == '__main__':
-    celery()

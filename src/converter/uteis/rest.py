@@ -45,7 +45,7 @@ def post(where: str, data: dict[str, Any]) -> ResponseAPI:
 
     except HTTPError as e:
         logger.exception(
-            f'Erro na requisição post: {e}',
+            'Erro na requisição post',
             extra={'BASE_URL': BASE_URL, 'where': where},
             stack_info=True,
         )
@@ -83,14 +83,14 @@ def path(where: str, data: dict[Any, Any]) -> ResponseAPI:
 
     except HTTPError as e:
         logger.exception(
-            f'Erro na requisição path: {e}',
+            'Erro na requisição path',
             extra={'BASE_URL': BASE_URL, 'where': where},
             stack_info=True,
         )
         raise APIError('Erro na requisição path') from e
     except Exception as e:
         logger.exception(
-            f'Erro na requisição path: {e}',
+            'Erro na requisição path',
             extra={'BASE_URL': BASE_URL, 'where': where},
             stack_info=True,
         )
@@ -222,3 +222,31 @@ def process_dll(layout_id: str, file: Arquivo) -> ResponseAPI:
         ) from e
     finally:
         Path(file.file_dir).unlink()
+
+
+def rest_done(filter_sql: str) -> None:
+    where = f'/releases?{filter_sql}'
+    try:
+        response = http.request(
+            'DELETE',
+            BASE_URL + where,
+        )
+
+        logger.info(response.status)
+        if response.status != HTTPStatus.NO_CONTENT:
+            raise APIError(f'Erro na requisição: {response.json()}')
+
+    except HTTPError as e:
+        logger.exception(
+            f'Erro ao apagar releases: {e}',
+            extra={'BASE_URL': BASE_URL, 'where': where},
+            stack_info=True,
+        )
+        raise APIError('Erro ao apagar releases', detail=str(e)) from e
+    except Exception as e:
+        logger.exception(
+            f'Erro ao apagar releases: {e}',
+            extra={'BASE_URL': BASE_URL, 'where': where},
+            stack_info=True,
+        )
+        raise Exception('Erro ao apagar releases') from e

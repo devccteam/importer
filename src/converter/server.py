@@ -15,6 +15,7 @@ from converter.uteis import config_logger
 from converter.uteis.arquivos import Arquivo, save_file, save_layout, valida_layout
 from converter.uteis.rest import (
     get_status,
+    rest_done,
 )
 
 app = FastAPI()
@@ -84,3 +85,8 @@ async def converter(
 @app.get('/convert/{id_task}')
 async def status(id_task: str) -> dict[str, Any]:
     return get_status(id_task)
+
+
+@app.post('/convert/{id_task}/done', status_code=HTTPStatus.NO_CONTENT)
+async def done(id_task: str) -> None:
+    rest_done(f'conversions_id=eq.{id_task}')
