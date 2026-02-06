@@ -6,9 +6,6 @@ ENV UV_COMPILE_BYTECODE=1 \
 	UV_NO_DEV=1 \
 	UV_PYTHON_INSTALL_DIR=/python
 
-RUN apk upgrade --no-cache && \
-	apk add --no-cache build-base
-
 RUN uv python install 3.14.2
 
 WORKDIR /app
@@ -29,8 +26,7 @@ FROM ghcr.io/astral-sh/uv:alpine3.22 AS development
 
 ENV PYTHONUNBUFFERED=1
 
-RUN apk upgrade --no-cache && \
-	apk add --no-cache build-base
+RUN apk add --no-cache libstdc++
 
 RUN addgroup -g 1000 python \
 	&& adduser -u 1000 -G python -s /bin/ash -D python ;

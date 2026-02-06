@@ -35,7 +35,7 @@ services:
       - CHUNK_TO_POST=500
     image: matheusbosi/importer:latest 
     user: "1000:1000"
-    command: "uv run --no-dev celery -A src.converter.tasks.processa worker -l INFO -P gevent -c 100"
+    command: "uv run --no-dev celery -A src.converter.tasks.config worker -l INFO -P prefork -c 3"
     volumes:
       - app:/app
     depends_on:
@@ -53,6 +53,23 @@ services:
         limits:
           cpus: "1"
           memory: 1024M
+
+  beat:
+    container_name: "celery_beat"
+    environment:
+      - REDIS_PORT=6379
+      - REDIS_HOST=redis
+      - URL_API_PGRST=https://converted.conciliadorcontabil.com.br
+      - URL_API_DLL=http://converter.conciliadorcontabil.com.br:9999
+      - CHUNK_TO_POST=500
+    image: matheusbosi/importer:latest
+    user: "1000:1000"
+    command: "uv run --no-dev celery -A src.converter.tasks.config beat -l INFO"
+    volumes:
+      - app:/app
+    depends_on:
+      - app
+
 
   flower:
     container_name: "flower"

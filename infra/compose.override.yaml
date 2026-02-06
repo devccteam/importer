@@ -64,6 +64,19 @@ services:
         - action: rebuild
           path: ./uv.lock
 
+  beat:
+    image: converter:latest
+    environment:
+      - REDIS_PORT
+      - REDIS_HOST
+      - URL_API_PGRST
+      - URL_API_DLL
+      - CHUNK_TO_POST
+    build:
+      context: ../
+      dockerfile: infra/Dockerfile
+      target: development
+
   flower:
     container_name: "flower"
     image: converter:latest
