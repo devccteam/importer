@@ -167,7 +167,14 @@ def check_dll(layout_id: str) -> ResponseAPI:
             },
         )
 
-        return response.json()
+        if not response.data:
+            return {}
+
+        try:
+            return response.json()
+        except json.JSONDecodeError:
+            return {'erro': response.data}
+
     except HTTPError as e:
         logger.exception(
             f'Erro na requisição /layout: {e}',
@@ -204,7 +211,7 @@ def process_dll(layout_id: str, file: Arquivo) -> ResponseAPI:
         return response.json()
     except HTTPError as e:
         logger.exception(
-            f'Erro na requisição /convert/layout: {e}',
+            'Erro na requisição /convert/layout: ',
             extra={'BASE_URL': BASE_DLL_URL, 'where': f'/layout/{layout_id}'},
             stack_info=True,
         )
@@ -232,7 +239,6 @@ def rest_done(filter_sql: str) -> None:
             BASE_URL + where,
         )
 
-        logger.info(response.status)
         if response.status != HTTPStatus.NO_CONTENT:
             raise APIError(f'Erro na requisição: {response.json()}')
 
@@ -250,3 +256,28 @@ def rest_done(filter_sql: str) -> None:
             stack_info=True,
         )
         raise Exception('Erro ao apagar releases') from e
+
+
+def get_layouts(filter_sql: str) -> list[dict[str, Any]] | list[str]:
+    try:
+        logger.debug(f'/layouts?{filter_sql}')
+        response = http.request('GET', BASE_URL + f'/layouts?{filter_sql}')
+
+        if response.status != HTTPStatus.OK:
+            raise APIError(f'Erro na requisição: {response.json()}')
+
+        if not response.data:
+            return ['']
+
+        return json.loads(response.data.decode('utf-8'))
+
+    except HTTPError as e:
+        logger.exception(
+            'Erro ao dar get em layouts',
+        )
+        raise APIError('Erro ao dar get em layouts', detail=str(e)) from e
+    except Exception as e:
+        logger.exception(
+            'Erro ao dar get em layouts',
+        )
+        raise Exception('Erro ao dar get em layouts') from e

@@ -2,6 +2,7 @@ import json
 from http import HTTPStatus
 from pathlib import Path
 from typing import Annotated, Any
+from urllib.parse import unquote
 
 from fastapi import FastAPI, Form, Header, Request, Response, UploadFile
 from fastapi.responses import JSONResponse
@@ -14,6 +15,7 @@ from converter.tasks.processa import processa_arquivo
 from converter.uteis import config_logger
 from converter.uteis.arquivos import Arquivo, save_file, save_layout, valida_layout
 from converter.uteis.rest import (
+    get_layouts,
     get_status,
     rest_done,
 )
@@ -30,7 +32,22 @@ async def base_error_handler(_: Request, exc: BaseError) -> JSONResponse:
     return JSONResponse(status_code=exc.code, content={'message': exc.message})
 
 
-@app.get('/layout/{layout_id}')
+@app.get(
+    '/layouts',
+    summary='Lista todos os layouts',
+    description='Consulta pode ser feita usando os filtros do PostgREST',
+    tags=['Layout - Consulta'],
+)
+async def list_layout(req: Request) -> list[dict[str, Any]] | list[str]:
+    query = unquote(str(req.query_params))
+    return get_layouts(query)
+
+
+@app.get(
+    '/layout/{layout_id}',
+    summary='Verifica informações do layout',
+    tags=['Layout - Consulta'],
+)
 async def layout(layout_id: str, response: Response) -> dict[str, Any]:
     info = get_info_layout(layout_id)
 
@@ -40,17 +57,32 @@ async def layout(layout_id: str, response: Response) -> dict[str, Any]:
     return info
 
 
-@app.post('/layout/upload/{layout_id}', status_code=HTTPStatus.NO_CONTENT)
+@app.post(
+    '/layout/upload/{layout_id}',
+    summary='Envia layout python',
+    tags=['Layout - Gerenciamento'],
+    status_code=HTTPStatus.NO_CONTENT,
+)
 async def upload_layout(layout_id: int, file: UploadFile) -> None:
     await save_layout(str(layout_id), file.file)
 
 
-@app.post('/layout/validate/{layout_id}', status_code=HTTPStatus.OK)
+@app.post(
+    '/layout/validate/{layout_id}',
+    summary='Valida layout python',
+    tags=['Layout - Gerenciamento'],
+    status_code=HTTPStatus.OK,
+)
 async def validate_layout(layout_id: int) -> None:
     await valida_layout(str(layout_id))
 
 
-@app.post('/convert/layout/{layout_id}', status_code=HTTPStatus.CREATED)
+@app.post(
+    '/convert/layout/{layout_id}',
+    summary='Converter arquivo',
+    tags=['Convert'],
+    status_code=HTTPStatus.CREATED,
+)
 async def converter(
     layout_id: int,
     file: UploadFile,
@@ -58,6 +90,7 @@ async def converter(
     input_val: Annotated[str, Form(alias='input')] = '',
     x_sandbox: Annotated[bool, Header(alias='X-Sandbox')] = False,
 ) -> dict[str, str]:
+    """Inica conversão do arquivo enviado, com base no codigo"""
     id_task = ''
     input_json = {'': ''}
 
@@ -82,11 +115,18 @@ async def converter(
     return {'id': id_task, 'status': 'Running'}
 
 
-@app.get('/convert/{id_task}')
+@app.get('/convert/{id_task}', tags=['Convert'], summary='Checa status da conversão')
 async def status(id_task: str) -> dict[str, Any]:
+    """Checa o status da conversão de um arquivo"""
     return get_status(id_task)
 
 
-@app.post('/convert/{id_task}/done', status_code=HTTPStatus.NO_CONTENT)
+@app.post(
+    '/convert/{id_task}/done',
+    tags=['Convert'],
+    summary='Limpa conversão',
+    status_code=HTTPStatus.NO_CONTENT,
+)
 async def done(id_task: str) -> None:
+    """Limpa a importação da API"""
     rest_done(f'conversions_id=eq.{id_task}')
