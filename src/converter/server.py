@@ -11,12 +11,14 @@ from converter.errors.error import BaseError
 from converter.layouts.loader import (
     get_info_layout,
 )
+from converter.models.new_layout import NewLayout
 from converter.tasks.processa import processa_arquivo
 from converter.uteis import config_logger
 from converter.uteis.arquivos import Arquivo, save_file, save_layout, valida_layout
 from converter.uteis.rest import (
     get_layouts,
     get_status,
+    post_create_layout,
     rest_done,
 )
 
@@ -75,6 +77,16 @@ async def upload_layout(layout_id: int, file: UploadFile) -> None:
 )
 async def validate_layout(layout_id: int) -> None:
     await valida_layout(str(layout_id))
+
+
+@app.post(
+    '/layout/create',
+    summary='Cria novo layout',
+    tags=['Layout - Gerenciamento'],
+    status_code=HTTPStatus.CREATED,
+)
+async def create_layout(info_layout: NewLayout) -> dict[str, int]:
+    return post_create_layout(info_layout)
 
 
 @app.post(

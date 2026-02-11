@@ -7,6 +7,7 @@ import urllib3
 from urllib3.exceptions import HTTPError
 
 from converter.errors.error import APIError, error_decorator
+from converter.models.new_layout import NewLayout
 from converter.settings import settings
 from converter.uteis import config_logger
 from converter.uteis.arquivos import Arquivo
@@ -260,7 +261,6 @@ def rest_done(filter_sql: str) -> None:
 
 def get_layouts(filter_sql: str) -> list[dict[str, Any]] | list[str]:
     try:
-        logger.debug(f'/layouts?{filter_sql}')
         response = http.request('GET', BASE_URL + f'/layouts?{filter_sql}')
 
         if response.status != HTTPStatus.OK:
@@ -281,3 +281,44 @@ def get_layouts(filter_sql: str) -> list[dict[str, Any]] | list[str]:
             'Erro ao dar get em layouts',
         )
         raise Exception('Erro ao dar get em layouts') from e
+
+
+def get_max_code() -> int:
+    try:
+        response = http.request('GET', BASE_URL + '/layouts?select=code.max()')
+
+        if response.status != HTTPStatus.OK:
+            raise APIError(f'Erro na requisição: {response.json()}')
+
+        if not response.data:
+            raise APIError('Retorno do max code falhou')
+
+        return response.json()[0]['max']
+
+    except HTTPError as e:
+        logger.exception(
+            'Erro ao dar get em layouts',
+        )
+        raise APIError('Erro ao dar get em layouts', detail=str(e)) from e
+
+
+def post_create_layout(layout: NewLayout) -> dict[str, int]:
+    try:
+        code = get_max_code() + 1
+
+        data = {'code': code, **layout.model_dump(by_alias=True)}
+
+        body = json.dumps(data).encode('utf-8')
+
+        response = http.request('POST', BASE_URL + '/layouts', body=body)
+
+        if response.status != HTTPStatus.CREATED:
+            raise APIError('Erro ao criar layout')
+
+        return {'code': code}
+
+    except HTTPError as e:
+        logger.exception(
+            'Erro ao dar get em layouts',
+        )
+        raise APIError('Erro ao dar get em layouts', detail=str(e)) from e
