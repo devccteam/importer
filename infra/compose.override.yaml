@@ -101,6 +101,7 @@ services:
       PGRST_DB_URI: postgres://local_user:local_password@db:5432/local_db
       PGRST_OPENAPI_SERVER_PROXY_URI: http://127.0.0.1:3000
       PGRST_DB_ANON_ROLE: anon
+      PGRST_DB_AGGREGATES_ENABLED: True
     depends_on:
       - db
 

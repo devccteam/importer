@@ -173,10 +173,23 @@ CREATE TABLE public.files (
 ALTER TABLE public.files
   ALTER COLUMN id SET STATISTICS 0;
 
+CREATE TABLE public.layouts (
+    id uuid  DEFAULT gen_random_uuid() NOT NULL,
+    created_at TIMESTAMP(0) WITHOUT TIME ZONE STORAGE PLAIN DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    code int NOT NULL,
+    name varchar(500) NOT NULL,
+    redirect varchar(500) NULL,
+    format varchar(10) NULL,
+    CONSTRAINT pk_layouts PRIMARY KEY (
+        id
+     )
+);
+
 CREATE ROLE anon NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT LOGIN NOREPLICATION NOBYPASSRLS;
 GRANT ALL ON SCHEMA public TO anon;
 GRANT ALL ON TABLE public.conversions TO anon;
 GRANT ALL ON TABLE public.files TO anon;
 GRANT ALL ON TABLE public.releases TO anon;
+GRANT ALL ON TABLE public.layouts TO anon;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO anon;
 
